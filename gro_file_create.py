@@ -6,7 +6,18 @@ Created on Mon Dec  5 16:40:17 2022
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
+from math import sin, cos, pi
 
+
+plt.rcParams['figure.figsize'] = [8, 6]
+plt.rcParams['figure.dpi'] = 400
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "sans-serif",
+    "font.sans-serif": ["Helvetica"]})
+
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
 
 
 molecular_density = 33 # nm^-1
@@ -125,10 +136,6 @@ for idz, z in enumerate(wall_vec[2,:]):
         delete_list.append(idz)
         
 
-    
-
-
-
 # some ugly stuff
 
 wall_vec = np.delete(wall_vec, delete_list, axis = 1)
@@ -136,17 +143,11 @@ idx_list = range(np.shape(channel_vec)[1])
 z = list(set(idx_list) - set(delete_list))
 channel_vec = np.delete(channel_vec, z, axis = 1)
 
-
-
-
-
-
-################################################################################
+########################## plotting #########################################
 
 fig = plt.figure()
 ax = plt.axes(projection='3d')
 
-    
 ax.scatter(reserv1_vec[0,:], reserv1_vec[1,:], reserv1_vec[2,:], c='royalblue', marker='o', s = 2)
 ax.scatter(reserv2_vec[0,:], reserv2_vec[1,:], reserv2_vec[2,:], c='firebrick', marker='o', s = 2)
 #ax.scatter(wall_vec[0,:], wall_vec[1,:], wall_vec[2,:], c='gray', marker='o', s = 2)
@@ -154,5 +155,150 @@ ax.scatter(channel_vec[0,:], channel_vec[1,:], channel_vec[2,:], c='k', marker='
 
 ax.view_init(85, 50)
 ax.view_init(20, 50)
+
+########################### water shift vectors ###############################
+
+bond_lenght = 0.9572
+bond_angle = 104.52
+alpha = 180-104.52
+deltax = cos(alpha*pi/180)*bond_lenght
+deltay = sin(alpha*pi/180)*bond_lenght
+
+h1_shift_vec = np.array((0.952,0,0))
+h2_shift_vec = np.array((-deltax,-deltay,0))
+
+
+###############################################################################
+
+
+oxygen_vec = np.concatenate((channel_vec, reserv1_vec, reserv2_vec), axis = 1)
+
+hydrogen1_vec = np.empty_like(oxygen_vec) 
+hydrogen2_vec = np.empty_like(oxygen_vec)
+
+result = np.empty_like(m) 
+for i in range(len(oxygen_vec)-1):
+  hydrogen1_vec[:3, i] = oxygen_vec[:3, i] + h1_shift_vec
+  hydrogen2_vec[:3, i] = oxygen_vec[:3, i] + h2_shift_vec
+
+
+
+
+# number of steps & number of atoms
+n_steps = 1
+
+n_mol = np.shape(oxygen_vec)[1]
+n_atoms =  3*n_mol # change to right 
+print(n_atoms)
+# position, molecule names, atom names & simulation box size
+
+
+
+atom_names = ["OW","HW1","HW2"]
+atom_name_list = atom_names*n_atoms
+
+molecule1_name = "WAT"
+molecule2_name = "CAR"
+
+
+def MoleculeDataToStringList(molecule_data, molecule_name, atom_name):
+    num_mol = np.shape(molecule_data)[1]
+    molecule_list = list(np.linspace(1,num_mol, num_mol))
+    molecule_name_list = []
+    atom_name_list = []
+    idx_list = []
+    print(molecule_list)
+    for mol in molecule_list:
+        molecule_name_list.append(molecule_name)
+        atom_name_list.append(atom_name)
+        idx_list.append((int(mol)))
+    return (molecule_name_list, atom_name_list, idx_list)
+
+
+
+
+
+OXY = (MoleculeDataToStringList(oxygen_vec, molecule1_name, atom_names[0]))
+H1 = (MoleculeDataToStringList(hydrogen1_vec, molecule1_name, atom_names[1]))
+H2 = (MoleculeDataToStringList(hydrogen2_vec, molecule1_name, atom_names[2]))
+
+
+full_vec = np.concatenate((oxygen_vec, hydrogen1_vec, hydrogen2_vec), axis = 1)
+full_molname_vec = OXY[0]+H1[0]+H2[0]
+full_atomname_vec = OXY[1]+H1[1]+H2[1]
+full_idx_vec = OXY[2]+H1[2]+H2[2]
+
+
+
+print("full_vec lenght:")
+print(np.shape(full_vec)[1])
+print("full_molname_vec lenght:")
+print(len(full_molname_vec))
+print("full_atomname_vec lenght:")
+print(len(full_atomname_vec))
+
+#x = np.zeros((3,n_atoms))
+x = full_vec[:3,:]
+
+#atom_name = np.empty(n_atoms,dtype=object)
+#molecule_name = np.empty(n_atoms,dtype=object)
+#molecule_number = np.arange(n_atoms)
+
+
+atom_name = full_atomname_vec
+molecule_name = full_molname_vec
+molecule_number = full_idx_vec
+
+box = np.zeros(3)
+
+# assign arbitrary values for now
+box[0] = 1e0
+box[1] = 1e0
+box[2] = 1e0
+
+title = "title"
+
+
+
+
+########################### output #############################################
+
+
+
+f = open("demofile2.gro", "w")
+
+for t in range(n_steps):
+
+  f.write("%-10s%2s%12.4f\n" % (title,"t=",t))
+  f.write("%5d\n" % (n_atoms))
+
+  for i in range(n_atoms):
+
+    x[:,i] = np.random.random(3)
+    
+    # format: (i5,2a5,i5,3f8.3,3f8.4) (the final 3 values can be used for velocities)
+    f.write("%5d%-5s%-5s%5d%8.3f%8.3f%8.3f\n" % (molecule_number[i],molecule_name[i],atom_name[i],i,x[0,i],x[1,i],x[2,i]))
+
+  f.write("%10.5f%10.5f%10.5f\n" % (box[0], box[1], box[2]))
+
+f.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
