@@ -1,0 +1,57 @@
+title                   = water
+cpp                     = /usr/bin/cpp
+
+; RUN CONTROL
+integrator              = md
+nsteps                  = 5000
+dt                      = 0.002
+
+; OUTPUT
+nstxout                 = 100000
+nstvout                 = 100000
+nstfout                 = 100000
+nstxout-compressed      = 500
+nstcalcenergy           = 5
+nstenergy               = 5
+nstlog                  = 10000
+
+; NEIGHBOUR SEARCHING
+ns-type                 = grid
+nstlist                 = 20
+
+; BOUNDARIES
+pbc                     = xyz
+periodic-molecules      = no
+
+; VAN DER WAALS
+cutoff-scheme           = verlet
+vdw-modifier            = force-switch
+rvdw-switch             = 0.9
+rvdw                    = 1.0
+
+; COULOMB
+coulombtype             = pme
+rcoulomb                = 1.0
+fourierspacing          = 0.12
+pme_order               = 4
+
+; BONDS
+constraints             = h-angles
+constraint-algorithm    = SHAKE
+
+; TEMPERATURE
+tcoupl                  = v-rescale 
+tc_grps                 = SOL
+energygrps              = SOL
+tau_t                   = 0.2
+ref_t                   = 300
+
+; PRESSURE
+compressibility         = 4.5E-5 4.5E-5
+tau_p                   = 1.0
+ref_p                   = 1.0
+Pcoupl                  = Parrinello-Rahman
+Pcoupltype              = isotropic
+
+; VELOCITIES AT THE START
+gen-vel                 = no

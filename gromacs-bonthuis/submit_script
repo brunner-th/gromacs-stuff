@@ -1,0 +1,18 @@
+# PROGRAMM AND COMMANDLINE PARAMETER(S)
+Executable = executable.sh
+# OUTPUT
+Output = $(Cluster).$(Process).out
+Error = $(Cluster).$(Process).err
+Log = CondorLog
+Universe = vanilla
+# REQUIREMENTS
+request_cpus = 2
+request_memory = 128
+# MiBytes
+request_disk = 512
+# kiBytes
+# NOTIFICATIONS
+notification = Error
+# <Always | Complete | Error | Never>
+# START PROCESSES
+Queue 1

@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 from math import sin, cos, pi
 
-
 plt.rcParams['figure.figsize'] = [8, 6]
 plt.rcParams['figure.dpi'] = 400
 plt.rcParams.update({
@@ -19,6 +18,7 @@ plt.rcParams.update({
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
+#################### input ####################################################
 
 molecular_density = 33 # nm^-1
 
@@ -34,7 +34,7 @@ m = 18.02 #g/mol
 rho = 997 #kg/m^3
 avogadro = 6.022*10**23 #1/mol
 
-
+################ basic stuff ##################################################
 
 m_si = m/10**3
 n_mol = rho/m_si # mol/m^3
@@ -45,10 +45,7 @@ molecule_per_nm3 = 1/vol_per_molecule_nm3 #nm^-3
 molecules_per_lenght = (molecule_per_nm3)**(1/3)
 
 
-
-
 ############## reservoir ######################################################
-
 
 
 nz_planes = 5
@@ -58,7 +55,7 @@ modified_molecules_per_lenght = (molecule_per_nm3/nz_planes)**(1/2)
 x_vec = np.linspace(0,width_reservoir,int(width_reservoir*modified_molecules_per_lenght+k1/2))
 y_vec = np.linspace(0,height_reservoir,int(height_reservoir*modified_molecules_per_lenght+k1/2))
 
-# maybe add n random waters to get right density
+# maybe add n random waters to get right density?
 
 ################ old version #######################
 
@@ -86,7 +83,6 @@ for idz, z in enumerate(z_vec):
 reserv2_vec = np.copy(reserv1_vec)
 print(np.shape(reserv1_vec))
 reserv2_vec[2,:] = reserv2_vec[2,:]+lenght_channel+lenght_reservoir+delta_wall
-
 
 
 
@@ -153,7 +149,7 @@ h1_shift_vec = np.array((0.952/10,0,0))
 h2_shift_vec = np.array((-deltax,-deltay,0))
 
 
-########################### rotate waters ##################################
+########################### rotate waters #####################################
 
 
 oxygen_vec = np.concatenate((channel_vec, reserv1_vec, reserv2_vec), axis = 1)
@@ -185,26 +181,18 @@ for i in range(np.shape(oxygen_vec)[1]-1):
                              np.cos(beta)*np.cos(gamm)
                              ]])
     
-    
     h1_shift_vec = np.dot(rotation_mat.T,h1_shift_vec)
     h2_shift_vec = np.dot(rotation_mat.T,h2_shift_vec)
-    
     
     hydrogen1_vec[:3, i] = oxygen_vec[:3, i] + h1_shift_vec
     hydrogen2_vec[:3, i] = oxygen_vec[:3, i] + h2_shift_vec
   
 
 
-
-
 # number of steps & number of atoms
 n_steps = 1
-
 n_mol = np.shape(oxygen_vec)[1]
 n_atoms =  3*n_mol # change to right 
-print(n_atoms)
-# position, molecule names, atom names & simulation box size
-
 
 
 atom_names = ["OW","HW1","HW2"]
@@ -228,19 +216,14 @@ def MoleculeDataToStringList(molecule_data, molecule_name, atom_name):
     return (molecule_name_list, atom_name_list, idx_list)
 
 
-
-
-
 OXY = (MoleculeDataToStringList(oxygen_vec, molecule1_name, atom_names[0]))
 H1 = (MoleculeDataToStringList(hydrogen1_vec, molecule1_name, atom_names[1]))
 H2 = (MoleculeDataToStringList(hydrogen2_vec, molecule1_name, atom_names[2]))
-
 
 full_vec = np.concatenate((oxygen_vec, hydrogen1_vec, hydrogen2_vec), axis = 1)
 full_molname_vec = OXY[0]+H1[0]+H2[0]
 full_atomname_vec = OXY[1]+H1[1]+H2[1]
 full_idx_vec = OXY[2]+H1[2]+H2[2]
-
 
 
 print("full_vec lenght:")
@@ -260,21 +243,14 @@ ax = plt.axes(projection='3d')
 #ax.scatter(reserv2_vec[0,:], reserv2_vec[1,:], reserv2_vec[2,:], c='firebrick', marker='o', s = 2)
 #ax.scatter(wall_vec[0,:], wall_vec[1,:], wall_vec[2,:], c='gray', marker='o', s = 2)
 #ax.scatter(channel_vec[0,:], channel_vec[1,:], channel_vec[2,:], c='k', marker='o', s = 2)
-
 #ax.scatter(full_vec[0,:], full_vec[1,:], full_vec[2,:], c='k', marker='o', s = 2)
 
 ax.scatter(full_vec[0,:2528], full_vec[1,:2528], full_vec[2,:2528], c='royalblue', marker='o', s = 2)
 ax.scatter(full_vec[0,2528:2528*2], full_vec[1,2528:2528*2], full_vec[2,2528:2528*2], c='firebrick', marker='o', s = 1)
 ax.scatter(full_vec[0,2528*2:], full_vec[1,2528*2:], full_vec[2,2528*2:], c='firebrick', marker='o', s = 1)
 
-
-
 ax.view_init(85, 50)
 ax.view_init(20, 50)
-
-
-
-
 
 ###############################################################################
 
@@ -301,10 +277,7 @@ box[2] = 10e0
 title = "test"
 
 
-
-
 ########################### output #############################################
-
 
 
 f = open("demofile2.gro", "w")
@@ -315,9 +288,7 @@ for t in range(n_steps):
   f.write("%5d\n" % (n_atoms))
 
   for i in range(n_atoms):
-
-    
-    
+      
     # format: (i5,2a5,i5,3f8.3,3f8.4) (the final 3 values can be used for velocities)
     f.write("%5d%-5s%-5s%5d%8.3f%8.3f%8.3f\n" % (molecule_number[i],molecule_name[i],atom_name[i],i,x[0,i],x[1,i],x[2,i]))
 

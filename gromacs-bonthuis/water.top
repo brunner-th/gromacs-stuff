@@ -1,0 +1,28 @@
+
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+  1		2		no		1.0	1.0
+
+[ atomtypes ]
+;name  at.num   mass      charge  ptype      sigma     epsilon
+; (in kJ/mol m^...)
+   H     1 	0.000      0.000     A           0           0
+  OW     8 	0.000      0.000     A      0.3166      0.6502
+   
+; Include water topology
+#include "spce.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+[ system ]
+; Name
+water
+
+[ molecules ]
+; Compound   #mols
+SOL           2000
