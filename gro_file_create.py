@@ -22,12 +22,12 @@ plt.rc('font', family='serif')
 
 molecular_density = 33 # nm^-1
 
+# dimensions:
 width_reservoir = 5
 height_reservoir = 5 
 lenght_reservoir = 1.5
 lenght_channel = 5
-radius_channel = 1
-
+radius_channel = 0.5
 delta_wall = 0.3
 
 m = 18.02 #g/mol
@@ -42,7 +42,7 @@ v_mol = m_si/rho # m^3/mol
 vol_per_molecule = v_mol/avogadro #m^3
 vol_per_molecule_nm3 = vol_per_molecule*10**27 #nm^3
 molecule_per_nm3 = 1/vol_per_molecule_nm3 #nm^-3
-molecules_per_lenght = (molecule_per_nm3)**(1/3)
+molecules_per_lenght = (molecule_per_nm3)**(1/3) #nm^-1
 
 
 ############## reservoir ######################################################
@@ -81,7 +81,7 @@ for idz, z in enumerate(z_vec):
         
         
 reserv2_vec = np.copy(reserv1_vec)
-print(np.shape(reserv1_vec))
+#print(np.shape(reserv1_vec))
 reserv2_vec[2,:] = reserv2_vec[2,:]+lenght_channel+lenght_reservoir+delta_wall
 
 
@@ -149,6 +149,99 @@ h1_shift_vec = np.array((0.952/10,0,0))
 h2_shift_vec = np.array((-deltax,-deltay,0))
 
 
+
+####################### XMol input ############################################
+
+def ReadXMol(file):
+    cnt_x = []
+    cnt_y = []
+    cnt_z = []
+    with open(file) as f:
+        for line in f.readlines()[2:-1]:
+            #print(line)
+            words = line.split(" ")
+            #print(words)
+            num_list = []
+            for word in words:
+                try:
+                    if word[:-1] == "n" :
+                        num_list.append(float(word[:-2]))
+                    else:
+                        num_list.append(float(word))
+                except:
+                    print("fail")
+                    
+            #print(num_list)
+            cnt_x.append(num_list[0])
+            cnt_y.append(num_list[1])
+            cnt_z.append(num_list[2])
+    return cnt_x, cnt_y, cnt_z
+
+
+########################## cnt ################################################
+
+cnt = ReadXMol('Nanotube_CC.xmol') # Nanotube_1nm.xmol
+
+cnt_x = np.array(cnt[0])
+cnt_y = np.array(cnt[1])
+cnt_z = np.array(cnt[2])
+        
+cnt_x = cnt_x/10.0
+cnt_y = cnt_y/10.0
+cnt_z = cnt_z/10.0
+
+cnt_x += width_reservoir/2
+cnt_y += width_reservoir/2
+cnt_z += lenght_reservoir 
+
+cnt_vec = np.stack((cnt_x, cnt_y, cnt_z))
+
+########################## graphene sheet #####################################
+
+sheet = ReadXMol('NanotubeSheet_CC.xmol')
+
+sheet_x = np.array(sheet[0])
+sheet_y = np.array(sheet[1])
+sheet_z = np.array(sheet[2])
+        
+sheet_x = sheet_x/10.0
+sheet_y = sheet_y/10.0
+sheet_z = sheet_z/10.0
+
+
+delete_list = []
+
+
+
+for idz, z in enumerate(sheet_x):
+    if (sheet_x[idz]-2.5)**2 + (sheet_y[idz]-2.5)**2 <= radius_channel**2:
+        delete_list.append(idz)
+            
+
+# some ugly stuff
+
+sheet_x = np.delete(sheet_x, delete_list, axis = 0)
+sheet_y = np.delete(sheet_y, delete_list, axis = 0)
+sheet_z = np.delete(sheet_z, delete_list, axis = 0)
+
+sheet1_z = sheet_z+lenght_reservoir 
+sheet2_z = sheet_z+lenght_reservoir+lenght_channel
+
+
+sheet1_vec = np.stack((sheet_x, sheet_y, sheet1_z))
+sheet2_vec = np.stack((sheet_x, sheet_y, sheet2_z))
+
+
+atom_name_list = ["C"]*(2*len(sheet_z)+len(cnt_z))
+
+carbon_vec = np.concatenate((cnt_vec,sheet1_vec,sheet2_vec), axis = 1)
+
+zeros = np.zeros_like(carbon_vec)
+
+carbon_vec = np.concatenate((carbon_vec,zeros), axis = 0)
+
+
+
 ########################### rotate waters #####################################
 
 
@@ -192,7 +285,8 @@ for i in range(np.shape(oxygen_vec)[1]-1):
 # number of steps & number of atoms
 n_steps = 1
 n_mol = np.shape(oxygen_vec)[1]
-n_atoms =  3*n_mol # change to right 
+n_carb = np.shape(carbon_vec)[1]
+n_atoms =  3*n_mol+n_carb # change to right 
 
 
 atom_names = ["OW","HW1","HW2"]
@@ -219,11 +313,13 @@ def MoleculeDataToStringList(molecule_data, molecule_name, atom_name):
 OXY = (MoleculeDataToStringList(oxygen_vec, molecule1_name, atom_names[0]))
 H1 = (MoleculeDataToStringList(hydrogen1_vec, molecule1_name, atom_names[1]))
 H2 = (MoleculeDataToStringList(hydrogen2_vec, molecule1_name, atom_names[2]))
+Carbon = (MoleculeDataToStringList(carbon_vec, molecule2_name, "C"))
 
-full_vec = np.concatenate((oxygen_vec, hydrogen1_vec, hydrogen2_vec), axis = 1)
-full_molname_vec = OXY[0]+H1[0]+H2[0]
-full_atomname_vec = OXY[1]+H1[1]+H2[1]
-full_idx_vec = OXY[2]+H1[2]+H2[2]
+
+full_vec = np.concatenate((oxygen_vec, hydrogen1_vec, hydrogen2_vec, carbon_vec), axis = 1)
+full_molname_vec = OXY[0]+H1[0]+H2[0]+Carbon[0]
+full_atomname_vec = OXY[1]+H1[1]+H2[1]+Carbon[1]
+full_idx_vec = OXY[2]+H1[2]+H2[2]+Carbon[2]
 
 
 print("full_vec lenght:")
@@ -247,22 +343,15 @@ ax = plt.axes(projection='3d')
 
 ax.scatter(full_vec[0,:2528], full_vec[1,:2528], full_vec[2,:2528], c='royalblue', marker='o', s = 2)
 ax.scatter(full_vec[0,2528:2528*2], full_vec[1,2528:2528*2], full_vec[2,2528:2528*2], c='firebrick', marker='o', s = 1)
-ax.scatter(full_vec[0,2528*2:], full_vec[1,2528*2:], full_vec[2,2528*2:], c='firebrick', marker='o', s = 1)
-
-ax.view_init(85, 50)
+ax.scatter(full_vec[0,2528*2:2528*2+len(channel_vec)], full_vec[1,2528*2+len(channel_vec)], full_vec[2,2528*2:2528*2+len(channel_vec)], c='firebrick', marker='o', s = 1)
+ax.scatter(full_vec[0,2528*2+len(channel_vec):], full_vec[1,2528*2+len(channel_vec):], full_vec[2,2528*2+len(channel_vec):], c='green', marker='+', s = 2)
+#ax.view_init(85, 50)
 ax.view_init(20, 50)
 
 ###############################################################################
 
 
-#x = np.zeros((3,n_atoms))
 x = full_vec[:3,:]
-
-#atom_name = np.empty(n_atoms,dtype=object)
-#molecule_name = np.empty(n_atoms,dtype=object)
-#molecule_number = np.arange(n_atoms)
-
-
 atom_name = full_atomname_vec
 molecule_name = full_molname_vec
 molecule_number = full_idx_vec
@@ -277,8 +366,11 @@ box[2] = 10e0
 title = "test"
 
 
-########################### output #############################################
+########################### output ############################################
+###############################################################################
 
+
+########################### gro file create ###################################
 
 f = open("demofile2.gro", "w")
 
@@ -288,7 +380,7 @@ for t in range(n_steps):
   f.write("%5d\n" % (n_atoms))
 
   for i in range(n_atoms):
-      
+    
     # format: (i5,2a5,i5,3f8.3,3f8.4) (the final 3 values can be used for velocities)
     f.write("%5d%-5s%-5s%5d%8.3f%8.3f%8.3f\n" % (molecule_number[i],molecule_name[i],atom_name[i],i,x[0,i],x[1,i],x[2,i]))
 
@@ -299,11 +391,45 @@ f.close()
 
 
 
+############################# ndx file create #################################
+
+name_list = ["System", "Water", "OW", "HW1_HW2", "Carbon"]
+
+
+sys_lenght = len(full_atomname_vec)
+sys_ind_array = np.linspace(1,sys_lenght, sys_lenght)
+
+water_num = np.shape(oxygen_vec)[1]+np.shape(hydrogen1_vec)[1]+np.shape(hydrogen2_vec)[1]
+water_ind_array = np.linspace(1,water_num, water_num)
+
+ow_num = int((water_num)/3)
+ow_ind_array = np.linspace(1,ow_num, ow_num)
+
+
+h12_ind_array = np.linspace(ow_num+1,water_num, ow_num*2)
 
 
 
 
 
+ind_list = [sys_ind_array, water_ind_array, ow_ind_array, h12_ind_array]
+
+
+
+f = open("test.ndx", "w")
+
+for ind, name in enumerate(name_list):
+
+    f.write("[ "+name+" ]\n")
+
+    for i in ind_list[ind]:
+        f.write(" "+str(int(i))+" ")
+
+    f.write("\n")
+  
+  
+  
+f.close()
 
 
 
