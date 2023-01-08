@@ -180,7 +180,7 @@ def ReadXMol(file):
 
 ########################## cnt ################################################
 
-cnt = ReadXMol('Nanotube_CC.xmol') # Nanotube_1nm.xmol
+cnt = ReadXMol('Nanotube_1nm.xmol') # Nanotube_1nm.xmol  Nanotube_CC.xmol
 
 cnt_x = np.array(cnt[0])
 cnt_y = np.array(cnt[1])
