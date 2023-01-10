@@ -180,7 +180,7 @@ def ReadXMol(file):
 
 ########################## cnt ################################################
 
-cnt = ReadXMol('Nanotube_CC.xmol') # Nanotube_1nm.xmol
+cnt = ReadXMol('Nanotube_1nm.xmol') # Nanotube_CC.xmol
 
 cnt_x = np.array(cnt[0])
 cnt_y = np.array(cnt[1])
@@ -315,11 +315,34 @@ H1 = (MoleculeDataToStringList(hydrogen1_vec, molecule1_name, atom_names[1]))
 H2 = (MoleculeDataToStringList(hydrogen2_vec, molecule1_name, atom_names[2]))
 Carbon = (MoleculeDataToStringList(carbon_vec, molecule2_name, "C"))
 
+sorted_vec = np.zeros_like(np.concatenate((oxygen_vec, hydrogen1_vec, hydrogen2_vec), axis = 1))
 
+full_molname_vec = []
+full_atomname_vec = []
+full_idx_vec = []
 full_vec = np.concatenate((oxygen_vec, hydrogen1_vec, hydrogen2_vec, carbon_vec), axis = 1)
-full_molname_vec = OXY[0]+H1[0]+H2[0]+Carbon[0]
-full_atomname_vec = OXY[1]+H1[1]+H2[1]+Carbon[1]
-full_idx_vec = OXY[2]+H1[2]+H2[2]+Carbon[2]
+
+for ind, molecule in enumerate(oxygen_vec[0,:]):
+    
+    sorted_vec[:,ind*3] = oxygen_vec[:,ind]
+    sorted_vec[:,ind*3+1] = hydrogen1_vec[:,ind]
+    sorted_vec[:,ind*3+2] = hydrogen2_vec[:,ind]
+    
+    full_molname_vec.append(molecule1_name)
+    full_molname_vec.append(molecule1_name)
+    full_molname_vec.append(molecule1_name)
+    full_atomname_vec.append(atom_names[0])
+    full_atomname_vec.append(atom_names[1])
+    full_atomname_vec.append(atom_names[2])
+    full_idx_vec.append((ind))
+    full_idx_vec.append((ind))
+    full_idx_vec.append((ind))
+
+sorted_vec = np.concatenate((sorted_vec, carbon_vec), axis = 1)
+
+full_molname_vec = full_molname_vec+Carbon[0]
+full_atomname_vec = full_atomname_vec+Carbon[1]
+full_idx_vec = full_idx_vec+[1]*len(Carbon[2])
 
 
 print("full_vec lenght:")
@@ -351,7 +374,7 @@ ax.view_init(20, 50)
 ###############################################################################
 
 
-x = full_vec[:3,:]
+x = sorted_vec[:3,:]
 atom_name = full_atomname_vec
 molecule_name = full_molname_vec
 molecule_number = full_idx_vec
@@ -380,7 +403,7 @@ for t in range(n_steps):
   f.write("%5d\n" % (n_atoms))
 
   for i in range(n_atoms):
-    
+    #print(i)
     # format: (i5,2a5,i5,3f8.3,3f8.4) (the final 3 values can be used for velocities)
     f.write("%5d%-5s%-5s%5d%8.3f%8.3f%8.3f\n" % (molecule_number[i],molecule_name[i],atom_name[i],i,x[0,i],x[1,i],x[2,i]))
 
@@ -405,38 +428,33 @@ water_ind_array = np.linspace(1,water_num, water_num)
 ow_num = int((water_num)/3)
 ow_ind_array = np.linspace(1,ow_num, ow_num)
 
-
 h12_ind_array = np.linspace(ow_num+1,water_num, ow_num*2)
-
-
-
-
 
 ind_list = [sys_ind_array, water_ind_array, ow_ind_array, h12_ind_array]
 
 
 
-f = open("test.ndx", "w")
-
-for ind, name in enumerate(name_list):
-
-    f.write("[ "+name+" ]\n")
-
-    for i in ind_list[ind]:
-        f.write(" "+str(int(i))+" ")
-
-    f.write("\n")
+#f = open("test.ndx", "w")
+#
+#for ind, name in enumerate(name_list):
+#
+#    f.write("[ "+name+" ]\n")
+#
+#    for i in ind_list[ind]:
+#        f.write(" "+str(int(i))+" ")
+#
+#    f.write("\n")
   
   
-  
-f.close()
+#f.close()
 
 
 
+########################### itp file create ###################################
 
 
 
-
+residue = ["PHPC"]*np.shape(sorted_vec)[1]
 
 
 

@@ -10,7 +10,7 @@
   OW     8 	0.000      0.000     A      0.3166      0.6502
    
 ; Include water topology
-#include "spce.itp"
+#include "tip3p.itp"
 
 #ifdef POSRES_WATER
 ; Position restraint for each water oxygen
